@@ -5,6 +5,7 @@
 
 #[tauri::command]
 fn greet(name: &str) -> String {
+    println!("I was invoked from JS, with this message",);
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 

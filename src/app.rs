@@ -18,6 +18,8 @@ struct GreetArgs<'a> {
     name: &'a str,
 }
 
+struct Model(i32);
+
 #[function_component(App)]
 pub fn app() -> Html {
     let dest_input_ref = use_node_ref();
@@ -27,9 +29,42 @@ pub fn app() -> Html {
     let name_input_ref = use_node_ref();
     let desc_input_ref = use_node_ref();
 
+    // states
+    //      sets up a state that yew is aware of, so it can re-render the component when it changes
+    let state = use_state(|| Model(2));
     let name = use_state(|| String::new());
-
     let greet_msg = use_state(|| String::new());
+
+    // functions
+    //      functions that can be called from html
+    //      this functions can change states but not execute rust code
+
+    // returns the data from greet_input_ref
+    let greet = {
+        let name = name.clone();
+        let greet_input_ref = dest_input_ref.clone();
+
+        Callback::from(move |_| {
+            name.set(
+                greet_input_ref
+                    .cast::<web_sys::HtmlInputElement>()
+                    .unwrap()
+                    .value(),
+            );
+        })
+    };
+
+    // function that adds 1 to the state
+    let on_click = {
+        // creates a clone of state because the original state is being used by the UI framework
+        let state = state.clone();
+
+        // move -> moves the ownership of stuff the closure uses to the closure and makes them inaccessible outside
+        // |_|  -> callback expects a function that takes a parameter, but we don't need it
+        Callback::from(move |_| state.set(Model { 0: state.0 * 2 }))
+    };
+
+    // *******************************
 
     {
         let greet_msg = greet_msg.clone();
@@ -52,19 +87,6 @@ pub fn app() -> Html {
             name2,
         );
     }
-
-    let greet = {
-        let name = name.clone();
-        let greet_input_ref = dest_input_ref.clone();
-        Callback::from(move |_| {
-            name.set(
-                greet_input_ref
-                    .cast::<web_sys::HtmlInputElement>()
-                    .unwrap()
-                    .value(),
-            );
-        })
-    };
 
     html! {
         <main class="container">
@@ -101,6 +123,8 @@ pub fn app() -> Html {
 
             <div class="row">
                 <button type="button" onclick={greet}>{"Send"}</button>
+                <button type="button" onclick={on_click}>{" +1 "}</button>
+                <p><center><b>{ state.0 }</b></center></p>
                 <p><center><b>{ &*greet_msg }</b></center></p>
             </div>
 
