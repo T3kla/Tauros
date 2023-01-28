@@ -81,7 +81,7 @@ p {
     justify-content: center;
     text-align: left;
     font-family: "Courier New", Courier, monospace;
-    color: #575757;
+    color: #cacaca;
     transform: translateY(25%);
 }
 
@@ -89,6 +89,15 @@ p {
     color: #cacaca;
     font-family: "Courier New", Courier, monospace;
     width: 100%;
+}
+
+#response {
+    color: #cacaca;
+    justify-content: center;
+    text-align: left;
+    margin-left: 6px;
+    margin-right: 6px;
+    font-family: "Courier New", Courier, monospace;
 }
 
 ::placeholder {
