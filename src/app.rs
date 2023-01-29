@@ -15,8 +15,8 @@ extern "C" {
 
 #[derive(Serialize, Deserialize)]
 struct SendArgs<'a> {
-    dest: &'a str,
     file: &'a str,
+    dest: &'a str,
     sess: &'a str,
     mode: &'a str,
     name: &'a str,
@@ -26,19 +26,95 @@ struct SendArgs<'a> {
 #[derive(Serialize, Deserialize, PartialEq)]
 struct Counter(u32);
 
+#[derive(Serialize, Deserialize, PartialEq)]
+struct Empty();
+
 #[function_component(App)]
 pub fn app() -> Html {
-    let dest_input_ref = use_node_ref();
+    // Input states
+
     let file_input_ref = use_node_ref();
+    let dest_input_ref = use_node_ref();
     let sess_input_ref = use_node_ref();
     let mode_input_ref = use_node_ref();
     let name_input_ref = use_node_ref();
     let desc_input_ref = use_node_ref();
 
+    // Log file dialog button stuff
+
+    let dest_back = use_state(|| Counter { 0: 0u32 });
+
+    let on_file_pressed = {
+        let dest_back = dest_back.clone();
+
+        Callback::from(move |_| {
+            dest_back.set(Counter { 0: dest_back.0 + 1 });
+        })
+    };
+
+    {
+        let file_input_ref = file_input_ref.clone();
+        let dest_back = dest_back.clone();
+        let dest_back2 = dest_back.clone();
+
+        use_effect_with_deps(
+            move |_| {
+                spawn_local(async move {
+                    if dest_back.0 == 0 {
+                        return;
+                    }
+                    let new_msg = invoke("file_command", to_value(&Empty {}).unwrap()).await;
+                    file_input_ref
+                        .cast::<web_sys::HtmlInputElement>()
+                        .unwrap()
+                        .set_value(new_msg.as_string().unwrap().as_str());
+                });
+                || {}
+            },
+            dest_back2,
+        );
+    }
+
+    // Destination folder dialog button stuff
+
+    let dest_back = use_state(|| Counter { 0: 0u32 });
+
+    let on_dest_pressed = {
+        let dest_back = dest_back.clone();
+
+        Callback::from(move |_| {
+            dest_back.set(Counter { 0: dest_back.0 + 1 });
+        })
+    };
+
+    {
+        let dest_input_ref = dest_input_ref.clone();
+        let dest_back = dest_back.clone();
+        let dest_back2 = dest_back.clone();
+
+        use_effect_with_deps(
+            move |_| {
+                spawn_local(async move {
+                    if dest_back.0 == 0 {
+                        return;
+                    }
+                    let new_msg = invoke("dest_command", to_value(&Empty {}).unwrap()).await;
+                    dest_input_ref
+                        .cast::<web_sys::HtmlInputElement>()
+                        .unwrap()
+                        .set_value(new_msg.as_string().unwrap().as_str());
+                });
+                || {}
+            },
+            dest_back2,
+        );
+    }
+
+    // Send button stuff
+
     let response_back = use_state(|| Counter { 0: 0u32 });
     let response_front = use_state(|| String::new());
 
-    // when send button is pressed, response_back state is changed
     let on_send_pressed = {
         let response_back = response_back.clone();
 
@@ -49,14 +125,13 @@ pub fn app() -> Html {
         })
     };
 
-    // hooks to the response_back state invokes a command when it changes
     {
         let response_front = response_front.clone();
         let response_back = response_back.clone();
         let response_back2 = response_back.clone();
 
-        let dest_input_ref = dest_input_ref.clone();
         let file_input_ref = file_input_ref.clone();
+        let dest_input_ref = dest_input_ref.clone();
         let sess_input_ref = sess_input_ref.clone();
         let mode_input_ref = mode_input_ref.clone();
         let name_input_ref = name_input_ref.clone();
@@ -71,11 +146,11 @@ pub fn app() -> Html {
                     let new_msg = invoke(
                         "send_command",
                         to_value(&SendArgs {
-                            dest: &dest_input_ref
+                            file: &file_input_ref
                                 .cast::<web_sys::HtmlInputElement>()
                                 .unwrap()
                                 .value(),
-                            file: &file_input_ref
+                            dest: &dest_input_ref
                                 .cast::<web_sys::HtmlInputElement>()
                                 .unwrap()
                                 .value(),
@@ -107,44 +182,39 @@ pub fn app() -> Html {
         );
     }
 
+    // Html stuff
+
     html! {
-        <main class="container">
+    <main class="grid-container">
 
-            <div class="row">
-                <label id="label" for="input">{"Destination:"}</label>
-                <input id="input" ref={dest_input_ref} placeholder="\\\\192.168.1.40\\Developers\\SHARE AND DELETE\\____LOGS" />
-            </div>
+        <label id="label" for="input">{"File:"}</label>
+        <input ref={file_input_ref} placeholder="C:\\SomeFolder\\AnotherFolder\\logFile.log" />
+        <button style="margin-right: 2px" type="button" onclick={on_file_pressed}>{">"}</button>
 
-            <div class="row">
-                <label id="label" for="input">{"Log file:"}</label>
-                <input id="input" ref={file_input_ref} placeholder="C:\\SteamLibrary\\steamapps\\common\\HitNRush..." />
-            </div>
+        <label id="label" for="input">{"Destination:"}</label>
+        <input ref={dest_input_ref} placeholder="C:\\LoggingFolder\\AnotherFolder" />
+        <button style="margin-right: 2px" type="button" onclick={on_dest_pressed}>{">"}</button>
 
-            <div class="row">
-                <label id="label" for="input">{"Session:"}</label>
-                <input id="input" ref={sess_input_ref} placeholder="00" />
-            </div>
+        <label id="label" for="input">{"Session:"}</label>
+        <input ref={sess_input_ref} placeholder="00" />
+        <div></div>
 
-            <div class="row">
-                <label id="label" for="input">{"Mode:"}</label>
-                <input id="input" ref={mode_input_ref} placeholder="2trio" />
-            </div>
+        <label id="label" for="input">{"Mode:"}</label>
+        <input ref={mode_input_ref} placeholder="2trio" />
+        <div></div>
 
-            <div class="row">
-                <label id="label" for="input">{"Name:"}</label>
-                <input id="input" ref={name_input_ref} placeholder="manu" />
-            </div>
+        <label id="label" for="input">{"Name:"}</label>
+        <input ref={name_input_ref} placeholder="manu" />
+        <div></div>
 
-            <div class="row">
-                <label id="label" for="input">{"Description:"}</label>
-                <input id="input" ref={desc_input_ref} placeholder="fatal_error_before_deploy" />
-            </div>
+        <label id="label" for="input">{"Description:"}</label>
+        <input ref={desc_input_ref} placeholder="fatal_error_before_deploy" />
+        <div></div>
 
-            <div class="row">
-                <button type="button" onclick={on_send_pressed}>{"Send"}</button>
-                <p id="response">{ &*response_front }</p>
-            </div>
+        <button type="button" onclick={on_send_pressed}>{"Send"}</button>
+        <label style="text-align: center" id="label">{ &*response_front }</label>
+        <div></div>
 
-        </main>
+    </main>
     }
 }

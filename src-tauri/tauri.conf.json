@@ -55,9 +55,9 @@
             {
                 "fullscreen": false,
                 "height": 350,
-                "resizable": true,
+                "resizable": false,
                 "title": "Tauros",
-                "width": 800
+                "width": 700
             }
         ]
     }
