@@ -40,38 +40,51 @@ pub fn app() -> Html {
     let name_input_ref = use_node_ref();
     let desc_input_ref = use_node_ref();
 
+    let response_front = use_state(|| String::new());
+
+    // Restore response front timer
+
     // Log file dialog button stuff
 
-    let dest_back = use_state(|| Counter { 0: 0u32 });
+    let file_back = use_state(|| Counter { 0: 0u32 });
 
     let on_file_pressed = {
-        let dest_back = dest_back.clone();
+        let file_back = file_back.clone();
 
         Callback::from(move |_| {
-            dest_back.set(Counter { 0: dest_back.0 + 1 });
+            file_back.set(Counter { 0: file_back.0 + 1 });
         })
     };
 
     {
         let file_input_ref = file_input_ref.clone();
-        let dest_back = dest_back.clone();
-        let dest_back2 = dest_back.clone();
+        let response_front = response_front.clone();
+        let file_back = file_back.clone();
+        let file_back2 = file_back.clone();
 
         use_effect_with_deps(
             move |_| {
                 spawn_local(async move {
-                    if dest_back.0 == 0 {
+                    if file_back.0 == 0 {
                         return;
                     }
-                    let new_msg = invoke("file_command", to_value(&Empty {}).unwrap()).await;
-                    file_input_ref
-                        .cast::<web_sys::HtmlInputElement>()
-                        .unwrap()
-                        .set_value(new_msg.as_string().unwrap().as_str());
+                    let result = invoke("file_command", to_value(&Empty {}).unwrap()).await;
+                    match result.as_string() {
+                        Some(s) => {
+                            response_front.set("".to_string());
+                            file_input_ref
+                                .cast::<web_sys::HtmlInputElement>()
+                                .unwrap()
+                                .set_value(&s);
+                        }
+                        None => {
+                            response_front.set("Failed to get file".to_string());
+                        }
+                    };
                 });
                 || {}
             },
-            dest_back2,
+            file_back2,
         );
     }
 
@@ -89,6 +102,7 @@ pub fn app() -> Html {
 
     {
         let dest_input_ref = dest_input_ref.clone();
+        let response_front = response_front.clone();
         let dest_back = dest_back.clone();
         let dest_back2 = dest_back.clone();
 
@@ -98,11 +112,19 @@ pub fn app() -> Html {
                     if dest_back.0 == 0 {
                         return;
                     }
-                    let new_msg = invoke("dest_command", to_value(&Empty {}).unwrap()).await;
-                    dest_input_ref
-                        .cast::<web_sys::HtmlInputElement>()
-                        .unwrap()
-                        .set_value(new_msg.as_string().unwrap().as_str());
+                    let result = invoke("dest_command", to_value(&Empty {}).unwrap()).await;
+                    match result.as_string() {
+                        Some(s) => {
+                            response_front.set("".to_string());
+                            dest_input_ref
+                                .cast::<web_sys::HtmlInputElement>()
+                                .unwrap()
+                                .set_value(&s);
+                        }
+                        None => {
+                            response_front.set("Failed to get folder".to_string());
+                        }
+                    };
                 });
                 || {}
             },
@@ -113,7 +135,6 @@ pub fn app() -> Html {
     // Send button stuff
 
     let response_back = use_state(|| Counter { 0: 0u32 });
-    let response_front = use_state(|| String::new());
 
     let on_send_pressed = {
         let response_back = response_back.clone();
@@ -200,15 +221,15 @@ pub fn app() -> Html {
         <div></div>
 
         <label id="label" for="input">{"Mode:"}</label>
-        <input ref={mode_input_ref} placeholder="2trio" />
+        <input ref={mode_input_ref} placeholder="1mode" />
         <div></div>
 
         <label id="label" for="input">{"Name:"}</label>
-        <input ref={name_input_ref} placeholder="manu" />
+        <input ref={name_input_ref} placeholder="name" />
         <div></div>
 
         <label id="label" for="input">{"Description:"}</label>
-        <input ref={desc_input_ref} placeholder="fatal_error_before_deploy" />
+        <input ref={desc_input_ref} placeholder="fatal error before X" />
         <div></div>
 
         <button type="button" onclick={on_send_pressed}>{"Send"}</button>
