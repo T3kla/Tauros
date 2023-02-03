@@ -61,7 +61,7 @@ fn send_command(file: &str, dest: &str, sess: &str, mode: &str, name: &str, desc
 
     match std::fs::copy(
         file,
-        format!("{}/{}[{}][{}]_{}", dest, sess, mode, name, desc),
+        format!("{}/{}[{}][{}]_{}.log", dest, sess, mode, name, desc),
     ) {
         Ok(_) => return "Sent!".to_string(),
         Err(e) => return e.to_string(),
